@@ -22,6 +22,9 @@ double posX, posY, yaw;
 double pi=3.1416;
 //bumper vars
 bool bumperLeft = 0, bumperCenter = 0, bumperRight = 0;
+//laser vars
+double laserRange = 10;
+int laserSize = 0, laserOffset = 0, desiredAngle = 10;
 
 void bumperCallback(const /*kobuki_msgs::BumperEvent::ConstPtr&*/ kobuki_msgs::BumperEvent msg){
 	//fill with your code
@@ -35,6 +38,27 @@ void bumperCallback(const /*kobuki_msgs::BumperEvent::ConstPtr&*/ kobuki_msgs::B
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
 	//fill with your code
+	laserSize = (msg->angle_max - msg->angle_min)/msg->angle_increment;
+	laserOffset = desiredAngle*pi/(180*msg->angle_increment);
+
+	if(desiredAngle*pi/180 < msg->angle_max && -desiredAngle*pi/180 > msg->angle_min) {
+		for(int i = laserSize/2 - laserOffset; i < laserSize/2 + laserOffset; i++) {
+			if(laserRange > msg->ranges[i] {
+				laserRange = msg->ranges[i];
+			}
+		}
+	}
+	else {
+		for(int i = 0; i < laserSize; i++) {
+			if (laserRange > msg->ranges[i])
+				laserRange = msg->ranges[i];
+			}
+		}
+	}
+	if (laserRange == 11)
+		laserRange = 0;
+
+	//ROS_INFO("Size of laser scan array: %i and size of offset %i", laserSize, laserOffset);
 }
 
 void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
@@ -74,23 +98,33 @@ int main(int argc, char **argv)
 		//...................................
 
 		//fill with your code
-		/*if(posX < 0.2 && yaw < pi/12 && !bumperRight && !bumperCenter && !bumperLeft) {
+		ROS_INFO("Position: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, yaw*180/pi, laserRange);
+		if(posX < 0.5 && yaw < pi/12 && !bumperRight && !bumperCenter && !bumperLeft && laserRange > 0.7) {
 			angular = 0.0;
 			linear = 0.2;
 		}
-		else if(posX > 0.0 && yaw < 2*pi && !bumperRight && !bumperCenter && !bumperLeft) {
+		else if(posX > 0.4 && yaw < 2*pi && !bumperRight && !bumperCenter && !bumperLeft && laserRange > 0.5) {
 			angular = pi/12;
 			linear = 0.0;
 		}
-		else if(posX > 0.0 && !bumperRight && !bumperCenter && !bumperLeft) {
-			angular = 0.0;
-			linear = -0.5;
+		else if(laserRange > 1.0 && !bumperRight && !bumperCenter && !bumperLeft) {
+			if(yaw < 17*pi/36 || posX > 0.6) {			
+				angular = pi/12;
+				linear = 0.1;
+			}
+			else if(yaw > 19*pi/36 || posX < 0.4) {			
+				angular = -pi/12;
+				linear = 0.1;
+			}
+			else {			
+				angular = 0;
+				linear = 0.1;
+			}
 		}
 		else {
 			angular = 0.0;
 			linear = 0.0;
 		}
-		*/
 
   		vel.angular.z = angular;
   		vel.linear.x = linear;
